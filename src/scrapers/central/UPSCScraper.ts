@@ -2,64 +2,46 @@ import { BaseScraper } from '../base/BaseScraper';
 import { RawJobData } from '../../types/scraper.types';
 import { logger } from '../../utils/logger';
 
-export class SSCScraper extends BaseScraper {
+export class UPSCScraper extends BaseScraper {
   constructor() {
-    super('SSC', 'https://ssc.nic.in/Portal/LatestAnnouncements');
+    super('UPSC', 'https://upsc.gov.in/recruitment');
   }
 
   async scrape(): Promise<RawJobData[]> {
     const jobs: RawJobData[] = [];
 
     try {
-      // Wait for job listings to load
-      await this.waitForSelector('.latest-announcement-list', 15000).catch(() => {
-        logger.warn('Could not find .latest-announcement-list, trying alternative selector');
-      });
-
-      // Get all job listing elements
-      const jobElements = await this.page!.$$('.announcement-item, .table tbody tr');
-
-      if (jobElements.length === 0) {
-        logger.warn('No job elements found');
-        return jobs;
-      }
+      await this.delay(2000);
+      
+      const jobElements = await this.page!.$$('.view-content .views-row, table tbody tr');
 
       for (const jobElement of jobElements) {
         try {
-          // Extract job title
           const title = await jobElement.$eval(
-            '.announcement-title, td:first-child',
+            '.views-field-title a, td:first-child a, h3 a',
             el => el.textContent?.trim() || ''
           ).catch(() => '');
 
           if (!title) continue;
 
-          // Extract notification link
           const notificationLink = await jobElement.$eval(
             'a',
             el => (el as HTMLAnchorElement).href
           ).catch(() => '');
 
-          // Extract date
           const dateText = await jobElement.$eval(
-            '.announcement-date, td:last-child',
+            '.views-field-created, td:nth-child(2)',
             el => el.textContent?.trim() || ''
           ).catch(() => '');
-
-          // Extract other details
-          const details = await jobElement.$eval(
-            '.announcement-details, td',
-            el => el.textContent?.trim() || ''
-          ).catch(() => title);
 
           const jobData: RawJobData = {
             source: this.sourceName,
             sourceUrl: this.sourceUrl,
             title: title,
-            organizationName: 'Staff Selection Commission',
+            organizationName: 'Union Public Service Commission',
             organizationType: 'Central Government',
             notificationUrl: notificationLink,
-            rawText: details,
+            rawText: title,
             dateText: dateText,
             scrapedAt: new Date(),
             metadata: {
@@ -70,16 +52,15 @@ export class SSCScraper extends BaseScraper {
           jobs.push(jobData);
 
         } catch (error) {
-          logger.error('Error extracting individual job:', error);
+          logger.error('Error extracting UPSC job:', error);
           continue;
         }
       }
 
-      logger.info(`SSC Scraper found ${jobs.length} jobs`);
+      logger.info(`UPSC Scraper found ${jobs.length} jobs`);
 
     } catch (error) {
-      logger.error('Error in SSC scraper:', error);
-      throw error;
+      logger.error('Error in UPSC scraper:', error);
     }
 
     return jobs;
