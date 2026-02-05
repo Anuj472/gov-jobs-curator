@@ -1,23 +1,28 @@
-import { supabase } from '../config/database';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ProcessedJobData, JobInDatabase } from '../types/scraper.types';
 import { logger } from '../utils/logger';
 import { SchemaGenerator } from './SchemaGenerator';
 import { generateSlug } from '../utils/helpers';
 
 export class SupabaseService {
-  public client = supabase;
+  public client: SupabaseClient;
   private schemaGenerator: SchemaGenerator;
 
   constructor() {
+    const supabaseUrl = process.env.SUPABASE_URL!;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY!;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase configuration');
+    }
+
+    this.client = createClient(supabaseUrl, supabaseKey);
     this.schemaGenerator = new SchemaGenerator();
   }
 
-  /**
-   * Insert new job into database
-   */
   async insertJob(jobData: ProcessedJobData): Promise<string | null> {
     try {
-      const slug = this.generateSlug(jobData.jobTitle, jobData.organizationName);
+      const slug = generateSlug(jobData.jobTitle, jobData.organizationName);
       const jsonLdSchema = this.schemaGenerator.generateJobSchema(jobData);
       const metaTitle = `${jobData.jobTitle} - ${jobData.organizationName}`;
       const metaDescription = this.generateMetaDescription(jobData);
@@ -69,6 +74,7 @@ export class SupabaseService {
         content_hash: jobData.contentHash,
         status: jobData.status,
         source: jobData.source,
+        source_url: jobData.sourceUrl,
         is_active: true,
         is_featured: false,
         view_count: 0,
@@ -95,12 +101,9 @@ export class SupabaseService {
     }
   }
 
-  /**
-   * Update existing job
-   */
   async updateJob(
     jobId: string,
-    updates: Partial<JobInDatabase>
+    updates: Partial<any>
   ): Promise<boolean> {
     try {
       const { error } = await this.client
@@ -119,9 +122,18 @@ export class SupabaseService {
     }
   }
 
-  /**
-   * Mark expired jobs as inactive
-   */
+  async bulkInsertJobs(jobs: ProcessedJobData[]): Promise<number> {
+    let successCount = 0;
+
+    for (const job of jobs) {
+      const inserted = await this.insertJob(job);
+      if (inserted) successCount++;
+    }
+
+    logger.info(`Bulk inserted ${successCount}/${jobs.length} jobs`);
+    return successCount;
+  }
+
   async markExpiredJobs(): Promise<number> {
     try {
       const { data, error } = await this.client
@@ -143,19 +155,6 @@ export class SupabaseService {
     }
   }
 
-  /**
-   * Generate URL slug
-   */
-  private generateSlug(title: string, organization: string): string {
-    const combined = `${title}-${organization}`;
-    const slug = generateSlug(combined, 100);
-    const suffix = Math.random().toString(36).substring(2, 8);
-    return `${slug}-${suffix}`;
-  }
-
-  /**
-   * Generate meta description
-   */
   private generateMetaDescription(job: ProcessedJobData): string {
     const parts = [
       `${job.totalVacancies} vacancies for ${job.jobTitle}`,

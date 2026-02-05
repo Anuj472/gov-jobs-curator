@@ -1,7 +1,8 @@
+import crypto from 'crypto';
 import { ProcessedJobData } from '../types/scraper.types';
 import { SupabaseService } from './SupabaseService';
 import { logger } from '../utils/logger';
-import { generateContentHash } from '../utils/hash';
+import { generateJobHash } from '../utils/hash';
 
 export class DeduplicationService {
   private supabase: SupabaseService;
@@ -10,21 +11,15 @@ export class DeduplicationService {
     this.supabase = supabaseService;
   }
 
-  /**
-   * Generate content hash for deduplication
-   */
   generateHash(job: ProcessedJobData): string {
-    return generateContentHash([
-      job.jobTitle,
-      job.organizationName,
-      job.applicationEndDate?.toISOString() || '',
-      job.totalVacancies.toString()
-    ]);
+    return generateJobHash({
+      title: job.jobTitle,
+      organization: job.organizationName,
+      endDate: job.applicationEndDate,
+      vacancies: job.totalVacancies
+    });
   }
 
-  /**
-   * Check if job already exists
-   */
   async findDuplicate(job: ProcessedJobData): Promise<string | null> {
     const hash = this.generateHash(job);
 
@@ -47,22 +42,16 @@ export class DeduplicationService {
     }
   }
 
-  /**
-   * Find similar jobs using fuzzy matching
-   */
-  async findSimilarJobs(job: ProcessedJobData, threshold = 0.7): Promise<any[]> {
+  async findSimilarJobs(job: ProcessedJobData): Promise<any[]> {
     try {
       const { data, error } = await this.supabase.client
-        .rpc('find_similar_jobs', {
-          job_title: job.jobTitle,
-          org_name: job.organizationName,
-          threshold
-        });
+        .from('jobs')
+        .select('id, job_title, organization_name')
+        .ilike('job_title', `%${job.jobTitle}%`)
+        .eq('organization_name', job.organizationName)
+        .limit(10);
 
-      if (error) {
-        logger.warn('Similar jobs function not available:', error.message);
-        return [];
-      }
+      if (error) throw error;
 
       return data || [];
 
@@ -72,17 +61,14 @@ export class DeduplicationService {
     }
   }
 
-  /**
-   * Merge duplicate jobs
-   */
   async mergeDuplicates(
     existingId: string,
     newJob: ProcessedJobData
   ): Promise<void> {
     try {
       await this.supabase.updateJob(existingId, {
-        updatedAt: new Date()
-      });
+        updated_at: new Date().toISOString()
+      } as any);
 
       logger.info(`Merged duplicate job: ${existingId}`);
 
