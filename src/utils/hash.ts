@@ -1,19 +1,24 @@
 import crypto from 'crypto';
 
-/**
- * Generate SHA256 hash from string
- */
-export function generateHash(input: string): string {
+export function generateHash(data: string): string {
   return crypto
     .createHash('sha256')
-    .update(input)
+    .update(data)
     .digest('hex');
 }
 
-/**
- * Generate content hash for deduplication
- */
-export function generateContentHash(fields: string[]): string {
-  const contentString = fields.join('|');
+export function generateJobHash(jobData: {
+  title: string;
+  organization: string;
+  endDate?: Date;
+  vacancies: number;
+}): string {
+  const contentString = [
+    jobData.title,
+    jobData.organization,
+    jobData.endDate?.toISOString() || '',
+    jobData.vacancies
+  ].join('|');
+
   return generateHash(contentString);
 }

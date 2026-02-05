@@ -1,63 +1,36 @@
-export const CONSTANTS = {
-  // Employment Types
-  EMPLOYMENT_TYPES: {
-    PERMANENT: 'Permanent',
-    CONTRACT: 'Contract',
-    TEMPORARY: 'Temporary',
-    INTERNSHIP: 'Internship',
-    APPRENTICESHIP: 'Apprenticeship'
-  },
+export const APP_NAME = 'Job Curator';
+export const APP_VERSION = '1.0.0';
 
-  // Organization Types
-  ORG_TYPES: {
-    CENTRAL: 'Central Government',
-    STATE: 'State Government',
-    PSU: 'Public Sector Undertaking',
-    DEFENSE: 'Defense',
-    BANKING: 'Banking',
-    EDUCATIONAL: 'Educational Institution',
-    RESEARCH: 'Research Organization'
-  },
-
-  // Application Modes
-  APPLICATION_MODES: {
-    ONLINE: 'Online',
-    OFFLINE: 'Offline',
-    BOTH: 'Both'
-  },
-
-  // Job Status
-  JOB_STATUS: {
-    ACTIVE: 'active',
-    DRAFT: 'draft',
-    PENDING_REVIEW: 'pending_review',
-    CLOSED: 'closed'
-  },
-
-  // Position Levels
-  POSITION_LEVELS: [
-    'Director',
-    'Manager',
-    'Officer',
-    'Assistant',
-    'Clerk',
-    'Engineer',
-    'Scientist',
-    'Professor',
-    'Teacher',
-    'Peon',
-    'Other'
-  ],
-
-  // Indian States
-  INDIAN_STATES: [
-    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
-    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
-    'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
-    'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
-    'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
-    'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-    'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
-    'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
-  ]
+export const SCRAPER_CONFIG = {
+  maxRetries: 3,
+  retryDelay: 2000,
+  timeout: 30000,
+  requestsPerMinute: 30,
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 };
+
+export const JOB_STATUS = {
+  ACTIVE: 'active',
+  DRAFT: 'draft',
+  PENDING_REVIEW: 'pending_review',
+  CLOSED: 'closed'
+} as const;
+
+export const EMPLOYMENT_TYPES = [
+  'Permanent',
+  'Contract',
+  'Temporary',
+  'Internship',
+  'Apprenticeship'
+] as const;
+
+export const ORGANIZATION_TYPES = [
+  'Central Government',
+  'State Government',
+  'PSU',
+  'Defense',
+  'Banking',
+  'Railway',
+  'Research',
+  'Education'
+] as const;

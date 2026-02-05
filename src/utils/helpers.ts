@@ -1,48 +1,27 @@
-/**
- * Clean and normalize text
- */
-export function cleanText(text: string): string {
-  return text
+export function cleanString(str: string): string {
+  return str
     .trim()
     .replace(/\s+/g, ' ')
-    .replace(/[\r\n]+/g, ' ');
+    .replace(/[^\w\s-]/g, '');
 }
 
-/**
- * Generate URL slug
- */
-export function generateSlug(text: string, maxLength = 100): string {
-  const slug = text
+export function generateSlug(title: string, organization: string): string {
+  const combined = `${title}-${organization}`;
+  const slug = combined
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .substring(0, maxLength);
+    .substring(0, 100);
   
-  return slug;
+  const suffix = Math.random().toString(36).substring(2, 8);
+  return `${slug}-${suffix}`;
 }
 
-/**
- * Extract numbers from text
- */
-export function extractNumber(text: string): number | null {
+export function parseNumber(text: string): number | undefined {
   const match = text.match(/\d+/);
-  return match ? parseInt(match[0]) : null;
+  return match ? parseInt(match[0]) : undefined;
 }
 
-/**
- * Parse date string in various formats
- */
-export function parseFlexibleDate(dateString: string): Date | null {
-  try {
-    // Try standard date parsing first
-    const date = new Date(dateString);
-    if (!isNaN(date.getTime())) {
-      return date;
-    }
-    
-    // Add more date parsing logic here
-    return null;
-  } catch {
-    return null;
-  }
+export function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

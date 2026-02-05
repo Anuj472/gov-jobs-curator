@@ -1,14 +1,12 @@
 import { logger } from './logger';
 
-export interface RetryOptions {
-  maxRetries?: number;
-  delay?: number;
-  backoff?: boolean;
-}
-
 export async function retry<T>(
   fn: () => Promise<T>,
-  options: RetryOptions = {}
+  options: {
+    maxRetries?: number;
+    delay?: number;
+    backoff?: boolean;
+  } = {}
 ): Promise<T> {
   const { maxRetries = 3, delay = 1000, backoff = true } = options;
 
@@ -23,7 +21,6 @@ export async function retry<T>(
 
       if (attempt < maxRetries) {
         const waitTime = backoff ? delay * Math.pow(2, attempt - 1) : delay;
-        logger.info(`Retrying in ${waitTime}ms...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
