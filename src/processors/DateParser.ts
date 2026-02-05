@@ -2,10 +2,10 @@ import { parse, isValid } from 'date-fns';
 import { logger } from '../utils/logger';
 
 export class DateParser {
-  private datePatterns = [
+  private dateFormats = [
     'dd/MM/yyyy',
     'dd-MM-yyyy',
-    'dd.MM.yyyy',
+    'MM/dd/yyyy',
     'yyyy-MM-dd',
     'dd MMM yyyy',
     'dd MMMM yyyy',
@@ -13,67 +13,58 @@ export class DateParser {
     'MMMM dd, yyyy'
   ];
 
-  /**
-   * Extract dates from text
-   */
   extractDates(text: string): {
     notification?: Date;
     start?: Date;
     end?: Date;
     exam?: Date;
   } {
-    const result: any = {};
+    const dates: any = {};
 
-    // Patterns for different date types
-    const patterns = {
-      notification: /notification.*?date.*?:?\s*([\d\/-]+)/i,
-      start: /(?:start|opening|from).*?date.*?:?\s*([\d\/-]+)/i,
-      end: /(?:last|closing|end|till).*?date.*?:?\s*([\d\/-]+)/i,
-      exam: /exam.*?date.*?:?\s*([\d\/-]+)/i
-    };
-
-    for (const [key, pattern] of Object.entries(patterns)) {
-      const match = text.match(pattern);
-      if (match) {
-        const parsedDate = this.parseDate(match[1]);
-        if (parsedDate) {
-          result[key] = parsedDate;
-        }
-      }
+    // Extract last date
+    const lastDatePattern = /(?:last date|closing date|end date)[:\s]*([\d\/\-]+)/i;
+    const lastDateMatch = text.match(lastDatePattern);
+    if (lastDateMatch) {
+      dates.end = this.parseDate(lastDateMatch[1]);
     }
 
-    return result;
+    // Extract start date
+    const startDatePattern = /(?:start date|opening date|from)[:\s]*([\d\/\-]+)/i;
+    const startDateMatch = text.match(startDatePattern);
+    if (startDateMatch) {
+      dates.start = this.parseDate(startDateMatch[1]);
+    }
+
+    // Extract notification date
+    const notificationPattern = /(?:notification|published)[:\s]*([\d\/\-]+)/i;
+    const notificationMatch = text.match(notificationPattern);
+    if (notificationMatch) {
+      dates.notification = this.parseDate(notificationMatch[1]);
+    }
+
+    // Extract exam date
+    const examPattern = /(?:exam date|examination date)[:\s]*([\d\/\-]+)/i;
+    const examMatch = text.match(examPattern);
+    if (examMatch) {
+      dates.exam = this.parseDate(examMatch[1]);
+    }
+
+    return dates;
   }
 
-  /**
-   * Parse date string with multiple format support
-   */
-  parseDate(dateString: string): Date | null {
-    // Clean the date string
-    const cleaned = dateString.trim();
-
-    // Try each pattern
-    for (const pattern of this.datePatterns) {
+  parseDate(dateString: string): Date | undefined {
+    for (const format of this.dateFormats) {
       try {
-        const parsed = parse(cleaned, pattern, new Date());
+        const parsed = parse(dateString, format, new Date());
         if (isValid(parsed)) {
           return parsed;
         }
-      } catch {
+      } catch (error) {
         continue;
       }
     }
 
-    // Try native Date parsing as fallback
-    try {
-      const date = new Date(cleaned);
-      if (isValid(date)) {
-        return date;
-      }
-    } catch {
-      logger.warn(`Could not parse date: ${dateString}`);
-    }
-
-    return null;
+    logger.warn(`Could not parse date: ${dateString}`);
+    return undefined;
   }
 }

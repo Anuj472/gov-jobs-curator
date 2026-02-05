@@ -1,9 +1,6 @@
 import { logger } from '../utils/logger';
 
 export class SalaryParser {
-  /**
-   * Parse salary information from text
-   */
   parseSalary(text: string): {
     min?: number;
     max?: number;
@@ -11,28 +8,30 @@ export class SalaryParser {
   } {
     const result: any = {};
 
-    // Pattern for pay level (e.g., Level 7, Pay Level 10)
-    const payLevelPattern = /(?:pay\s*)?level[:\s]*([\d]+)/i;
-    const payLevelMatch = text.match(payLevelPattern);
-    if (payLevelMatch) {
-      result.payLevel = `Level ${payLevelMatch[1]}`;
-    }
-
-    // Pattern for salary range (e.g., Rs. 44900-142400, 25000-50000)
-    const salaryRangePattern = /(?:rs\.?|₹)?\s*(\d{4,})\s*[-to]+\s*(\d{4,})/i;
-    const rangeMatch = text.match(salaryRangePattern);
+    // Parse salary range (e.g., "Rs. 15000 - 25000")
+    const rangePattern = /(?:rs\.?|₹)\s*(\d+(?:,\d+)*)\s*-\s*(?:rs\.?|₹)?\s*(\d+(?:,\d+)*)/i;
+    const rangeMatch = text.match(rangePattern);
+    
     if (rangeMatch) {
-      result.min = parseInt(rangeMatch[1]);
-      result.max = parseInt(rangeMatch[2]);
+      result.min = parseInt(rangeMatch[1].replace(/,/g, ''));
+      result.max = parseInt(rangeMatch[2].replace(/,/g, ''));
     }
 
-    // Pattern for single salary amount
-    if (!result.min) {
-      const singleSalaryPattern = /(?:salary|pay).*?(?:rs\.?|₹)?\s*(\d{4,})/i;
-      const singleMatch = text.match(singleSalaryPattern);
-      if (singleMatch) {
-        result.min = parseInt(singleMatch[1]);
-      }
+    // Parse pay level (e.g., "Level-7")
+    const payLevelPattern = /(?:pay level|level)[:\s-]*(\d+)/i;
+    const payLevelMatch = text.match(payLevelPattern);
+    
+    if (payLevelMatch) {
+      result.payLevel = `Level-${payLevelMatch[1]}`;
+    }
+
+    // Parse pay scale (e.g., "9300-34800")
+    const payScalePattern = /(\d+(?:,\d+)*)\s*-\s*(\d+(?:,\d+)*)/;
+    const payScaleMatch = text.match(payScalePattern);
+    
+    if (payScaleMatch && !result.min) {
+      result.min = parseInt(payScaleMatch[1].replace(/,/g, ''));
+      result.max = parseInt(payScaleMatch[2].replace(/,/g, ''));
     }
 
     return result;

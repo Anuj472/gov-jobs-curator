@@ -1,52 +1,37 @@
 import { logger } from '../utils/logger';
 
-export class QualificationMapper {
-  private qualificationLevels = [
-    { keywords: ['10th', 'class 10', 'matriculation', 'ssc'], level: '10th Pass', order: 1 },
-    { keywords: ['12th', 'class 12', 'intermediate', 'higher secondary', '+2'], level: '12th Pass', order: 2 },
-    { keywords: ['diploma'], level: 'Diploma', order: 3 },
-    { keywords: ['iti'], level: 'ITI', order: 3 },
-    { keywords: ['graduation', 'bachelor', 'degree', 'b.tech', 'b.e.', 'b.sc', 'b.com', 'ba', 'bba'], level: 'Graduation', order: 4 },
-    { keywords: ['post.*graduation', 'master', 'm.tech', 'm.e.', 'm.sc', 'm.com', 'ma', 'mba'], level: 'Post Graduation', order: 5 },
-    { keywords: ['phd', 'doctorate'], level: 'PhD', order: 6 }
-  ];
+const QUALIFICATIONS = {
+  '10th': ['10th', 'class 10', 'matric', 'matriculation'],
+  '12th': ['12th', 'class 12', 'intermediate', 'higher secondary'],
+  'Graduation': ['graduation', 'graduate', 'bachelor', 'degree', 'b.a', 'b.sc', 'b.com', 'b.tech', 'b.e'],
+  'Post Graduation': ['post graduation', 'post graduate', 'master', 'pg', 'm.a', 'm.sc', 'm.com', 'm.tech', 'mba'],
+  'PhD': ['phd', 'doctorate', 'doctoral'],
+  'Diploma': ['diploma', 'iti'],
+  'Any': ['any qualification', 'no qualification required']
+};
 
-  /**
-   * Map qualification from text to standardized format
-   */
+export class QualificationMapper {
   mapQualification(text: string): {
     required: string[];
     min: string;
     max?: string;
   } {
     const lowerText = text.toLowerCase();
-    const found: Array<{ level: string; order: number }> = [];
+    const found: string[] = [];
 
-    // Find all matching qualifications
-    for (const qual of this.qualificationLevels) {
-      for (const keyword of qual.keywords) {
-        const regex = new RegExp(keyword, 'i');
-        if (regex.test(lowerText)) {
-          found.push({ level: qual.level, order: qual.order });
+    for (const [qual, patterns] of Object.entries(QUALIFICATIONS)) {
+      for (const pattern of patterns) {
+        if (lowerText.includes(pattern)) {
+          found.push(qual);
           break;
         }
       }
     }
 
-    // Remove duplicates and sort by order
-    const unique = Array.from(
-      new Map(found.map(item => [item.level, item])).values()
-    ).sort((a, b) => a.order - b.order);
+    const required = found.length > 0 ? found : ['Any'];
+    const min = required[0];
+    const max = required.length > 1 ? required[required.length - 1] : undefined;
 
-    const result: any = {
-      required: unique.map(q => q.level),
-      min: unique.length > 0 ? unique[0].level : 'Not Specified'
-    };
-
-    if (unique.length > 1) {
-      result.max = unique[unique.length - 1].level;
-    }
-
-    return result;
+    return { required, min, max };
   }
 }
